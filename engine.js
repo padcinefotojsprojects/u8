@@ -254,7 +254,15 @@
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 
     const aspect = canvas.width / canvas.height;
-    const projection = perspective(fov, aspect, 0.1, 10);
+
+   // Em telas largas, controla o campo de visão horizontal.
+   // Em telas verticais, mantém o comportamento original.
+   const isWideScreen = aspect >= 1.2;
+   const projectionFov = isWideScreen
+     ? 2 * Math.atan(Math.tan((fov * Math.PI / 180) / 2) / aspect) * 180 / Math.PI
+     : fov;
+
+   const projection = perspective(projectionFov, aspect, 0.1, 10);
     const view = viewRotation(yaw * Math.PI / 180, pitch * Math.PI / 180);
     gl.uniformMatrix4fv(gl.getUniformLocation(program, 'uProjection'), false, projection);
     gl.uniformMatrix4fv(gl.getUniformLocation(program, 'uView'), false, view);
