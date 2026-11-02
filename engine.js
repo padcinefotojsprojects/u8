@@ -258,8 +258,9 @@
    // Em telas largas, controla o campo de visão horizontal.
    // Em telas verticais, mantém o comportamento original.
    const isWideScreen = aspect >= 1.2;
+   const widerFov = fov * 1.10;
    const projectionFov = isWideScreen
-     ? 2 * Math.atan(Math.tan((fov * Math.PI / 180) / 2) / aspect) * 180 / Math.PI
+     ? 2 * Math.atan(Math.tan((widerFov * Math.PI / 180) / 2) / aspect) * 180 / Math.PI
      : fov;
 
    const projection = perspective(projectionFov, aspect, 0.1, 10);
