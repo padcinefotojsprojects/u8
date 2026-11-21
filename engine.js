@@ -3,23 +3,23 @@
 /*
  * Motor esférico 360° próprio.
  * Dependências externas: nenhuma. Renderização: WebGL 1.0 nativo.
- * Imagem padrão: ./image/u8.jpg (equiretangular, proporção 2:1).
- * Opcional: window.TOUR_CONFIG antes de engine.js, com { image: 'caminho.jpg' }.
+ * Imagem padrão: ./image/yangwangu8.png (equiretangular, proporção 2:1).
+ * Opcional: window.TOUR_CONFIG antes de engine.js, com { image: 'caminho.png' }.
  */
 (() => {
   const CONFIG = Object.assign({
-    image: './image/u8.jpg',
+    image: './image/yangwangu8.png',
     sphereSegments: 96,
     sphereRings: 48,
     initialYaw: 0,
     initialPitch: 0,
-    initialFov: 75,
-    minFov: 35,
+    initialFov: 90,
+    minFov: 20,
     maxFov: 100,
     dragSensitivity: 0.22,
     keyboardStep: 4,
     autoHideHintMs: 4200,
-    maxPixelRatio: 2
+    maxPixelRatio: 2.5
   }, window.TOUR_CONFIG || {});
 
   const canvas = document.getElementById('tour-canvas');
@@ -217,8 +217,43 @@
         const canRepeatHorizontally = isPowerOfTwo(image.naturalWidth) && isPowerOfTwo(image.naturalHeight);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, canRepeatHorizontally ? gl.REPEAT : gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+        // Mipmaps: usados apenas quando a textura permite esse recurso.
+        if (canRepeatHorizontally) {
+          gl.generateMipmap(gl.TEXTURE_2D);
+          gl.texParameteri(
+            gl.TEXTURE_2D,
+            gl.TEXTURE_MIN_FILTER,
+            gl.LINEAR_MIPMAP_LINEAR
+          );
+        } else {
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        }
+
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+        // Filtragem anisotrópica, se disponível no navegador/GPU.
+        const anisotropyExtension =
+          gl.getExtension('EXT_texture_filter_anisotropic') ||
+          gl.getExtension('WEBKIT_EXT_texture_filter_anisotropic') ||
+          gl.getExtension('MOZ_EXT_texture_filter_anisotropic');
+
+        if (anisotropyExtension) {
+          const maxAnisotropy = gl.getParameter(
+            anisotropyExtension.MAX_TEXTURE_MAX_ANISOTROPY_EXT
+          );
+
+          gl.texParameterf(
+            gl.TEXTURE_2D,
+            anisotropyExtension.TEXTURE_MAX_ANISOTROPY_EXT,
+            Math.min(4, maxAnisotropy)
+          );
+        }
+
+        console.info(
+          'Panorama carregado:',
+          image.width + ' × ' + image.height
+        );
         resolve(image);
       };
       image.onerror = () => reject(new Error(`Não foi possível carregar "${url}". Confirme o nome do arquivo e sua localização.`));
@@ -321,7 +356,7 @@
       const points = Array.from(activePointers.values());
       const currentDistance = distance(points[0], points[1]);
       if (pinchStartDistance > 0) {
-        fov = Math.max(CONFIG.minFov, Math.min(CONFIG.maxFov, pinchStartFov - (currentDistance - pinchStartDistance) * 0.12));
+        fov = Math.max(CONFIG.minFov, Math.min(CONFIG.maxFov, pinchStartFov - (currentDistance - pinchStartDistance) * 0.18));
       }
       return;
     }
